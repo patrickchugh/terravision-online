@@ -530,10 +530,20 @@ table.compare { width: 100%; border-collapse: collapse; min-width: 820px; font-s
 /* ---------- CTA ---------- */
 .cta { margin-top: clamp(5rem, 11vw, 9rem); padding: clamp(3.5rem, 7vw, 6rem) 1.5rem; text-align: center; position: relative; overflow: hidden; border-top: 1px solid var(--line); }
 .cta::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(600px 300px at 50% 100%, rgba(var(--accent-rgb), .25), transparent 70%); }
-.cta h2 { margin: 0 auto; max-width: 16ch; font-family: var(--font-title); font-size: clamp(2.3rem, 5.6vw, 4.5rem); font-weight: 600; letter-spacing: -.045em; line-height: 1.02; text-wrap: balance; }
+.cta h2 .l1, .cta h2 .l2 { display: block; }
+.cta h2 { margin: 0 auto; max-width: 24ch; font-family: var(--font-title); font-size: clamp(2.3rem, 5.6vw, 4.5rem); font-weight: 600; letter-spacing: -.045em; line-height: 1.02; text-wrap: balance; }
 .cta-line { display: inline-flex; width: min(100%, 600px); align-items: center; gap: .6rem; max-width: 100%; margin: 2rem auto 0; padding: .8rem 1.1rem; border-radius: 12px; border: 1px solid var(--line-hi); background: var(--surface); font-family: var(--font-mono); font-size: .875rem; text-align: left; }
 .cta-line .gt { color: var(--accent-text); flex: none; }
-.cta-line .txt { overflow: hidden; white-space: nowrap; text-overflow: clip; }
+.cta-line .txt { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: clip; }
+/* The swapping word: both words share one grid cell, the inactive one slides out and blurs */
+.cta h2 .swap { display: inline-grid; vertical-align: bottom; text-align: center; }
+.cta h2 .swap .w { grid-area: 1 / 1; transition: opacity .6s var(--ease-out), transform .6s var(--ease-out), filter .6s var(--ease-out); }
+.cta h2 .w-review { color: var(--warm); }
+.cta h2 .w-design { color: var(--accent-2); }
+.cta h2[data-mode="review"] .w-design { opacity: 0; transform: translateY(.45em); filter: blur(8px); }
+.cta h2[data-mode="design"] .w-review { opacity: 0; transform: translateY(-.45em); filter: blur(8px); }
+.mode-tag { flex: none; margin-left: auto; padding: .15rem .55rem; border-radius: 999px; font-size: .6875rem; letter-spacing: .06em; text-transform: uppercase; color: var(--warm); background: rgba(var(--warm-rgb), .12); transition: color .4s, background .4s; }
+.mode-tag.is-design { color: var(--accent-text); background: var(--accent-soft); }
 .cta-caret { flex: none; width: 8px; height: 1.15em; margin-left: -.3rem; background: var(--accent); animation: caret 1s steps(1) infinite; }
 .cta .hero-ctas { animation: none; margin-top: 2rem; }
 

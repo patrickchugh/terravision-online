@@ -473,25 +473,47 @@
     });
   });
 
-  /* ---------- Closing prompt types itself ---------- */
-  var CTA_PROMPTS = [
-    'Draw an Azure hub-and-spoke landing zone',
-    'Draw the architecture of the Terraform in ./infra',
-    'Show how a request flows through it',
-    'Write the Terraform for this architecture',
-    'Draw a GKE cluster with Private Service Connect',
-    'Make this diagram interactive'
+  /* ---------- Closing prompt types itself, alternating review and design ---------- */
+  // Each run of prompts belongs to a mode; the headline word and the tag switch with it
+  var CTA_SETS = [
+    { mode: 'review', prompts: [
+      'Show me the architecture of https://github.com/patrickchugh/testcase-bastion',
+      'Draw the architecture of the Terraform in ./infra',
+      'Draw prod from ./infra with prod.tfvars for our security review'
+    ] },
+    { mode: 'design', prompts: [
+      'Draw an Azure hub-and-spoke landing zone',
+      'Draw a GKE cluster with Private Service Connect',
+      'Write the Terraform for this architecture'
+    ] }
   ];
-  var ctaEl = $('#cta-typed');
+  var CTA_PROMPTS = [];
+  CTA_SETS.forEach(function (set) { set.prompts.forEach(function (t) { CTA_PROMPTS.push({ mode: set.mode, text: t }); }); });
+  var ctaEl = $('#cta-typed'), ctaH = $('#cta-h'), ctaTag = $('#cta-tag');
+  function setCtaMode(mode) {
+    if (ctaH.getAttribute('data-mode') === mode) return;
+    ctaH.setAttribute('data-mode', mode);
+    $('.w-review', ctaH).setAttribute('aria-hidden', String(mode !== 'review'));
+    $('.w-design', ctaH).setAttribute('aria-hidden', String(mode !== 'design'));
+    ctaTag.textContent = mode;
+    ctaTag.classList.toggle('is-design', mode === 'design');
+  }
   if (!reduceMotion) {
-    var ci = 0, cj = CTA_PROMPTS[0].length, deleting = true, ctaVisible = false;
+    var ci = 0, cj = CTA_PROMPTS[0].text.length, deleting = true, ctaVisible = false;
     new IntersectionObserver(function (en) { ctaVisible = en[0].isIntersecting; }).observe(ctaEl);
     (function tick() {
-      var word = CTA_PROMPTS[ci], delay = deleting ? 22 : 45;
+      var delay = deleting ? 18 : 42;
       if (ctaVisible) {
-        if (deleting) { cj--; if (cj <= 0) { deleting = false; ci = (ci + 1) % CTA_PROMPTS.length; delay = 300; } }
-        else { cj++; if (cj >= CTA_PROMPTS[ci].length) { deleting = true; delay = 2200; } }
-        ctaEl.textContent = CTA_PROMPTS[ci].slice(0, Math.max(0, cj));
+        if (deleting) {
+          cj--;
+          if (cj <= 0) {
+            deleting = false; ci = (ci + 1) % CTA_PROMPTS.length; delay = 300;
+            setCtaMode(CTA_PROMPTS[ci].mode);
+            if (ci > 0 && CTA_PROMPTS[ci - 1].mode !== CTA_PROMPTS[ci].mode || ci === 0) delay = 900; // let the word swap land first
+          }
+        } else { cj++; if (cj >= CTA_PROMPTS[ci].text.length) { deleting = true; delay = 2200; } }
+        ctaEl.textContent = CTA_PROMPTS[ci].text.slice(0, Math.max(0, cj));
+        ctaEl.scrollLeft = ctaEl.scrollWidth; // long prompts (URLs) keep the typing end in view
       } else delay = 400;
       setTimeout(tick, delay);
     })();
