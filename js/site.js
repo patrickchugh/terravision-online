@@ -477,8 +477,8 @@
   // Each run of prompts belongs to a mode; the headline word and the tag switch with it
   var CTA_SETS = [
     { mode: 'review', prompts: [
-      'Show me the architecture of https://github.com/patrickchugh/testcase-bastion',
       'Draw the architecture of the Terraform in ./infra',
+      'Show me the architecture of github.com/patrickchugh/testcase-bastion',
       'Draw prod from ./infra with prod.tfvars for our security review'
     ] },
     { mode: 'design', prompts: [
@@ -499,10 +499,12 @@
     ctaTag.classList.toggle('is-design', mode === 'design');
   }
   if (!reduceMotion) {
-    var ci = 0, cj = CTA_PROMPTS[0].text.length, deleting = true, ctaVisible = false;
+    var ci = 0, cj = CTA_PROMPTS[0].text.length, deleting = true, ctaVisible = false, held = false;
     new IntersectionObserver(function (en) { ctaVisible = en[0].isIntersecting; }).observe(ctaEl);
     (function tick() {
       var delay = deleting ? 18 : 42;
+      // the first prompt is already on screen: hold it before erasing, so it gets read
+      if (ctaVisible && !held) { held = true; ctaEl.scrollLeft = ctaEl.scrollWidth; setTimeout(tick, 3200); return; }
       if (ctaVisible) {
         if (deleting) {
           cj--;
