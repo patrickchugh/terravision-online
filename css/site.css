@@ -1,5 +1,5 @@
 /* TerraVision marketing site
-   One design, two colour sets. Dark follows the system by default; the toggle
+   One design, two colour sets. Dark is the default; the toggle
    writes data-theme on <html>. Components read only the tokens below. */
 
 @property --sweep { syntax: '<angle>'; inherits: false; initial-value: -26deg; }
@@ -28,21 +28,7 @@
   color-scheme: dark;
 }
 
-/* Light set: applied when the system asks for light and the visitor has not chosen dark, or when they chose light */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --fg-rgb: 18, 18, 38; --bg-rgb: 247, 246, 252; --accent-rgb: 88, 76, 230; --shadow-rgb: 28, 24, 72; --shadow-k: .14;
-    --bg: #f7f6fc; --bg-2: #efedf9; --surface: #ffffff; --surface-2: #f3f1fb; --sunken: #ebe9f5; --plate: #fbfaff;
-    --text: #121226; --text-2: rgba(18, 18, 38, .7); --text-3: rgba(18, 18, 38, .55);
-    --line: rgba(18, 18, 38, .08); --line-hi: rgba(18, 18, 38, .15); --line-strong: rgba(18, 18, 38, .35);
-    --accent: #584ce6; --accent-2: #3a36a0; --accent-text: #4a3fd6; --accent-soft: rgba(88, 76, 230, .09); --on-accent: #fff;
-    --warm: #e2560e; --ok: #0f9d63; --warn: #b77900; --bad: #d92d4a;
-    --aws: #d97a00; --azure: #0067c0; --gcp: #188038;
-    --btn-bg: #121226; --btn-fg: #ffffff; --btn-hover: #000000;
-    --code-bg: #15152b; --code-text: #e6e4ff; --code-dim: #7d7aa6;
-    color-scheme: light;
-  }
-}
+/* Light set: dark is the default; the toggle opts into light */
 :root[data-theme="light"] {
   --fg-rgb: 18, 18, 38; --bg-rgb: 247, 246, 252; --accent-rgb: 88, 76, 230; --shadow-rgb: 28, 24, 72; --shadow-k: .14;
   --bg: #f7f6fc; --bg-2: #efedf9; --surface: #ffffff; --surface-2: #f3f1fb; --sunken: #ebe9f5; --plate: #fbfaff;
@@ -106,10 +92,6 @@ body::before {
 .theme-toggle .i-sun { display: none; }
 :root[data-theme="light"] .theme-toggle .i-sun { display: block; }
 :root[data-theme="light"] .theme-toggle .i-moon { display: none; }
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) .theme-toggle .i-sun { display: block; }
-  :root:not([data-theme="dark"]) .theme-toggle .i-moon { display: none; }
-}
 .gh-btn { display: inline-flex; align-items: center; gap: .5rem; height: 38px; padding: 0 .8rem; border-radius: 10px; border: 1px solid var(--line); font-size: .8125rem; color: var(--text-2); transition: color .2s, border-color .2s; }
 .gh-btn:hover { color: var(--text); border-color: var(--line-hi); }
 .gh-btn svg { width: 16px; height: 16px; }
@@ -357,7 +339,7 @@ section.block { padding: clamp(5rem, 11vw, 9rem) 0 0; position: relative; }
 .duo-label { display: flex; align-items: center; gap: .6rem; font-family: var(--font-title); font-size: 1.25rem; font-weight: 600; letter-spacing: -.02em; }
 .duo-label .arrow { color: var(--accent); }
 .duo-card > p { margin: -.5rem 0 0; color: var(--text-2); font-size: .9375rem; }
-.duo .window { height: 440px; }
+.duo .window { height: 440px; margin-top: auto; } /* keeps both windows level when the intros differ in length */
 
 .term { flex: 1; min-height: 0; padding: 1.1rem 1.2rem; background: var(--code-bg); color: var(--code-text); font-family: var(--font-mono); font-size: .78125rem; line-height: 1.75; overflow: hidden auto; scrollbar-width: none; }
 .term .ln { display: block; white-space: pre; opacity: 0; }

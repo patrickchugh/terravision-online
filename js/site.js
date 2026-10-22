@@ -21,7 +21,7 @@
   /* ---------- Theme ---------- */
   $('.theme-toggle').addEventListener('click', function () {
     var root = document.documentElement;
-    var current = root.getAttribute('data-theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    var current = root.getAttribute('data-theme') || 'dark';
     var next = current === 'light' ? 'dark' : 'light';
     root.setAttribute('data-theme', next);
     try { localStorage.setItem('tv-theme', next); } catch (e) { /* storage unavailable: theme lasts this visit */ }
@@ -358,14 +358,14 @@
     grid.innerHTML = shown.map(function (g, i) {
       var c = CLOUD[g.provider];
       return '<article class="g-card" style="animation-delay:' + (Math.min(i, 8) * 45) + 'ms">' +
-        '<a class="g-thumb" href="' + DOCS_GALLERY + '#' + g.id + '" data-open="' + g.img + '">' +
+        '<a class="g-thumb" href="' + DOCS_GALLERY + '#' + g.id + '" target="_blank" rel="noopener" data-open="' + g.img + '">' +
           '<span class="badge" style="--c:' + c.c + '">' + c.name + '</span>' +
           '<img src="assets/gallery/' + g.img + '.webp" width="' + g.w + '" height="' + g.h + '" loading="lazy" alt="' + esc(g.title) + ' architecture diagram">' +
         '</a>' +
         '<div class="g-body"><h3>' + esc(g.title) + '</h3><p>' + esc(g.prompt) + '</p>' +
           '<div class="g-actions">' +
             '<a href="#" data-copy-text="' + esc(g.prompt) + '"><svg><use href="#i-copy"/></svg>Copy prompt</a>' +
-            '<a href="' + REPO + '/blob/main/examples/graphs/' + g.source + '.tvg.json"><svg><use href="#i-code"/></svg>Source</a>' +
+            '<a href="' + REPO + '/blob/main/examples/graphs/' + g.source + '.tvg.json" target="_blank" rel="noopener"><svg><use href="#i-code"/></svg>Source</a>' +
           '</div></div></article>';
     }).join('');
     moreBtn.parentElement.hidden = list.length <= PAGE;
@@ -434,11 +434,11 @@
     $('#lb-prompt').textContent = g.prompt;
     $('#lb-cmd').textContent = 'terravision draw --source ' + g.source + '.tvg.json --annotate ' + g.source + '.annotations.yml --format drawio';
     $('#lb-links').innerHTML =
-      '<a href="' + RAW + g.source + '.png">PNG</a>' +
-      '<a href="' + RAW + g.source + '.svg">SVG</a>' +
-      '<a href="' + RAW + g.source + '.tvg.json">Source graph</a>' +
-      '<a href="' + RAW + g.source + '.annotations.yml">Annotations</a>' +
-      '<a href="' + DOCS_GALLERY + '#' + g.id + '">In the docs ↗</a>';
+      '<a href="' + RAW + g.source + '.png" target="_blank" rel="noopener">PNG</a>' +
+      '<a href="' + RAW + g.source + '.svg" target="_blank" rel="noopener">SVG</a>' +
+      '<a href="' + RAW + g.source + '.tvg.json" target="_blank" rel="noopener">Source graph</a>' +
+      '<a href="' + RAW + g.source + '.annotations.yml" target="_blank" rel="noopener">Annotations</a>' +
+      '<a href="' + DOCS_GALLERY + '#' + g.id + '" target="_blank" rel="noopener">In the docs ↗</a>';
     $('.lb-img', m).scrollTop = 0;
     openModal(m);
   }
