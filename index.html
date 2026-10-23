@@ -521,7 +521,12 @@ winget install --id Hashicorp.Terraform -e   # optional: to draw from Terraform 
 # Ubuntu 26.04 and later only (also Debian 14 "forky"/testing)
 sudo apt install libgvplugin-neato-layout8
 
-curl -LsSf https://astral.sh/uv/install.sh | sh   # Claude Desktop on Linux needs uv too</pre>
+curl -LsSf https://astral.sh/uv/install.sh | sh   # Claude Desktop on Linux needs uv too
+
+# optional: Terraform, to draw from Terraform code
+wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install terraform</pre>
             <div class="code-caption" data-caption-for="win" hidden>Then open a <b>new</b> terminal and restart your AI app, so they see the new programs.</div>
           </div>
         </div>
