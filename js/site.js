@@ -361,6 +361,7 @@
         '<a class="g-thumb" href="' + DOCS_GALLERY + '#' + g.id + '" target="_blank" rel="noopener" data-open="' + g.img + '">' +
           '<span class="badge" style="--c:' + c.c + '">' + c.name + '</span>' +
           '<img src="assets/gallery/' + g.img + '.webp" width="' + g.w + '" height="' + g.h + '" loading="lazy" alt="' + esc(g.title) + ' architecture diagram">' +
+          '<span class="g-mag" aria-hidden="true"></span>' +
         '</a>' +
         '<div class="g-body"><h3>' + esc(g.title) + '</h3><p>' + esc(g.prompt) + '</p>' +
           '<div class="g-actions">' +
@@ -390,6 +391,54 @@
     openLightbox(byImg[a.getAttribute('data-open')]);
   });
   renderGallery();
+
+  /* ---------- Gallery hover magnifier ---------- */
+  var MAG = 3; // magnified width as a multiple of the card width
+  var finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+  var hdCache = {};
+  function hdUrl(img) { return 'assets/gallery/hd/' + img + '.webp'; }
+  function preloadHd(img, done) {
+    if (hdCache[img] === true) { done(); return; }
+    var im = hdCache[img] || (hdCache[img] = new Image());
+    im.addEventListener('load', function () { hdCache[img] = true; done(); }, { once: true });
+    if (!im.src) im.src = hdUrl(img);
+  }
+  var magThumb = null, magTimer = 0, magFrame = 0, magEvent = null;
+  function placeMag() {
+    magFrame = 0;
+    if (!magThumb || !magEvent) return;
+    var r = magThumb.getBoundingClientRect(), g = byImg[magThumb.getAttribute('data-open')];
+    var W = r.width * MAG, H = W * g.h / g.w;
+    var cx = clamp(magEvent.clientX - r.left, 0, r.width), cy = clamp(magEvent.clientY - r.top, 0, r.height);
+    // The point under the pointer sits at the same relative spot in the whole diagram
+    var mag = $('.g-mag', magThumb);
+    mag.style.backgroundSize = W + 'px ' + H + 'px';
+    mag.style.backgroundPosition = (cx - cx / r.width * W) + 'px ' + (cy - cy / r.height * H) + 'px';
+  }
+  function endMag() {
+    clearTimeout(magTimer);
+    if (magThumb) magThumb.classList.remove('is-mag');
+    magThumb = null;
+  }
+  grid.addEventListener('mousemove', function (e) {
+    if (!finePointer.matches) return;
+    var t = e.target.closest('.g-thumb');
+    if (t !== magThumb) {
+      endMag();
+      if (!t) return;
+      magThumb = t;
+      var img = t.getAttribute('data-open'), mag = $('.g-mag', t);
+      if (!mag.style.backgroundImage) mag.style.backgroundImage = 'url(' + (hdCache[img] === true ? hdUrl(img) : 'assets/gallery/' + img + '.webp') + ')';
+      t.classList.add('is-mag');
+      // Swap in the full-resolution copy if the pointer stays a moment
+      magTimer = setTimeout(function () {
+        preloadHd(img, function () { mag.style.backgroundImage = 'url(' + hdUrl(img) + ')'; });
+      }, 250);
+    }
+    magEvent = e;
+    if (!magFrame) magFrame = requestAnimationFrame(placeMag);
+  });
+  grid.addEventListener('mouseleave', endMag);
 
   /* ---------- Modals ---------- */
   var lastFocus = null;
@@ -425,10 +474,135 @@
     });
   });
 
+  /* ---------- Zoomable diagram viewer ---------- */
+  var view = $('#lb-view'), lbImg = $('#lb-img'), lbHd = $('#lb-hd');
+  var zoomPct = $('.zoom-pct', view), zoomIn = $('[data-zoom="in"]', view), zoomOut = $('[data-zoom="out"]', view);
+  var MAX_ZOOM = 4;
+  // s = 1 fits the diagram to the viewer's width; x, y are the image's offset in the viewer
+  var zv = { g: null, s: 1, x: 0, y: 0, vw: 0, vh: 0, ih: 0 };
+  function minZoom() { return Math.min(1, zv.vh / zv.ih); }
+  function clampPan() {
+    var cw = zv.vw * zv.s, ch = zv.ih * zv.s;
+    zv.x = cw <= zv.vw ? (zv.vw - cw) / 2 : clamp(zv.x, zv.vw - cw, 0);
+    zv.y = ch <= zv.vh ? (zv.vh - ch) / 2 : clamp(zv.y, zv.vh - ch, 0);
+  }
+  function applyZoom(animate) {
+    clampPan();
+    view.classList.toggle('is-animating', !!animate);
+    view.classList.toggle('is-zoomed', zv.s > 1.01);
+    lbImg.style.transform = 'translate(' + zv.x + 'px,' + zv.y + 'px) scale(' + zv.s + ')';
+    zoomPct.textContent = Math.round(zv.s * 100) + '%';
+    zoomIn.disabled = zv.s >= MAX_ZOOM - 0.001;
+    zoomOut.disabled = zv.s <= minZoom() + 0.001;
+  }
+  function zoomAt(s, px, py, animate) {
+    s = clamp(s, minZoom(), MAX_ZOOM);
+    zv.x = px - (px - zv.x) * s / zv.s;
+    zv.y = py - (py - zv.y) * s / zv.s;
+    zv.s = s;
+    applyZoom(animate);
+  }
+  function measureView() {
+    var oldVw = zv.vw;
+    // client sizes ignore the modal's opening scale transform
+    zv.vw = view.clientWidth; zv.vh = view.clientHeight;
+    zv.ih = zv.vw * zv.g.h / zv.g.w;
+    lbImg.style.width = zv.vw + 'px';
+    lbImg.style.height = zv.ih + 'px';
+    if (oldVw) { zv.x *= zv.vw / oldVw; zv.y *= zv.vw / oldVw; }
+  }
+  function resetZoom(animate) { zv.s = 1; zv.x = 0; zv.y = 0; applyZoom(animate); }
+  function zoomStep(dir) { zoomAt(zv.s * (dir > 0 ? 1.5 : 1 / 1.5), zv.vw / 2, zv.vh / 2, true); }
+
+  $('.zoom-bar', view).addEventListener('click', function (e) {
+    var b = e.target.closest('[data-zoom]'); if (!b) return;
+    var k = b.getAttribute('data-zoom');
+    if (k === 'in') zoomStep(1);
+    else if (k === 'out') zoomStep(-1);
+    else if (k === 'reset') resetZoom(true);
+    else { zv.s = minZoom(); applyZoom(true); }
+  });
+  $('.zoom-bar', view).addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+  $('.zoom-bar', view).addEventListener('dblclick', function (e) { e.stopPropagation(); });
+
+  // Scroll pans; pinch on a trackpad or Ctrl/⌘ + scroll zooms toward the pointer
+  view.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    var r = view.getBoundingClientRect(), k = e.deltaMode === 1 ? 16 : 1;
+    if (e.ctrlKey || e.metaKey) {
+      zoomAt(zv.s * Math.exp(-clamp(e.deltaY * k, -50, 50) * 0.01), e.clientX - r.left, e.clientY - r.top);
+    } else {
+      zv.x -= (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * k;
+      if (!e.shiftKey) zv.y -= e.deltaY * k;
+      applyZoom();
+    }
+  }, { passive: false });
+
+  view.addEventListener('dblclick', function (e) {
+    var r = view.getBoundingClientRect();
+    zoomAt(zv.s >= MAX_ZOOM - 0.01 ? 1 : zv.s * 2, e.clientX - r.left, e.clientY - r.top, true);
+  });
+
+  // Drag to pan, two fingers to pinch
+  var pointers = {}, pinch = null;
+  function pinchState() {
+    var p = Object.keys(pointers).map(function (id) { return pointers[id]; });
+    var r = view.getBoundingClientRect();
+    return { d: Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y), mx: (p[0].x + p[1].x) / 2 - r.left, my: (p[0].y + p[1].y) / 2 - r.top };
+  }
+  view.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0) return;
+    view.setPointerCapture(e.pointerId);
+    pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+    view.classList.add('is-dragging');
+    if (Object.keys(pointers).length === 2) pinch = pinchState();
+  });
+  view.addEventListener('pointermove', function (e) {
+    var p = pointers[e.pointerId]; if (!p) return;
+    var dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    if (pinch) {
+      var n = pinchState();
+      zv.x += n.mx - pinch.mx; zv.y += n.my - pinch.my;
+      zoomAt(zv.s * n.d / pinch.d, n.mx, n.my);
+      pinch = n;
+    } else {
+      zv.x += dx; zv.y += dy;
+      applyZoom();
+    }
+  });
+  function endPointer(e) {
+    delete pointers[e.pointerId];
+    if (Object.keys(pointers).length < 2) pinch = null;
+    if (!Object.keys(pointers).length) view.classList.remove('is-dragging');
+  }
+  view.addEventListener('pointerup', endPointer);
+  view.addEventListener('pointercancel', endPointer);
+
+  document.addEventListener('keydown', function (e) {
+    if (!zv.g || !$('#lightbox').classList.contains('is-open') || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === '+' || e.key === '=') zoomStep(1);
+    else if (e.key === '-' || e.key === '_') zoomStep(-1);
+    else if (e.key === '0') resetZoom(true);
+    else return;
+    e.preventDefault();
+  });
+  window.addEventListener('resize', function () {
+    if (!zv.g || $('#lightbox').hidden) return;
+    measureView(); applyZoom();
+  });
+
   function openLightbox(g) {
     if (!g) return;
     var m = $('#lightbox');
-    $('#lb-img').src = 'assets/gallery/' + g.img + '.webp';
+    zv.g = g; zv.vw = 0;
+    lbImg.src = hdCache[g.img] === true ? hdUrl(g.img) : 'assets/gallery/' + g.img + '.webp';
+    lbHd.hidden = hdCache[g.img] === true;
+    preloadHd(g.img, function () {
+      if (zv.g !== g) return;
+      lbImg.src = hdUrl(g.img);
+      lbHd.hidden = true;
+    });
     $('#lb-img').alt = g.title + ' architecture diagram';
     $('#lb-title').textContent = g.title;
     $('#lb-prompt').textContent = g.prompt;
@@ -439,7 +613,9 @@
       '<a href="' + RAW + g.source + '.tvg.json" target="_blank" rel="noopener">Source graph</a>' +
       '<a href="' + RAW + g.source + '.annotations.yml" target="_blank" rel="noopener">Annotations</a>' +
       '<a href="' + DOCS_GALLERY + '#' + g.id + '" target="_blank" rel="noopener">In the docs ↗</a>';
-    $('.lb-img', m).scrollTop = 0;
+    m.hidden = false;
+    measureView();
+    resetZoom();
     openModal(m);
   }
 
