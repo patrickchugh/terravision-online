@@ -664,7 +664,10 @@
     ] }
   ];
   var CTA_PROMPTS = [];
-  CTA_SETS.forEach(function (set) { set.prompts.forEach(function (t) { CTA_PROMPTS.push({ mode: set.mode, text: t }); }); });
+  // Alternate review and design prompts: review, design, review, design…
+  for (var k = 0; k < CTA_SETS[0].prompts.length; k++) {
+    CTA_SETS.forEach(function (set) { CTA_PROMPTS.push({ mode: set.mode, text: set.prompts[k] }); });
+  }
   var ctaEl = $('#cta-typed'), ctaH = $('#cta-h'), ctaTag = $('#cta-tag');
   function setCtaMode(mode) {
     if (ctaH.getAttribute('data-mode') === mode) return;
@@ -687,7 +690,7 @@
           if (cj <= 0) {
             deleting = false; ci = (ci + 1) % CTA_PROMPTS.length; delay = 300;
             setCtaMode(CTA_PROMPTS[ci].mode);
-            if (ci > 0 && CTA_PROMPTS[ci - 1].mode !== CTA_PROMPTS[ci].mode || ci === 0) delay = 900; // let the word swap land first
+            delay = 900; // let the word swap land first
           }
         } else { cj++; if (cj >= CTA_PROMPTS[ci].text.length) { deleting = true; delay = 2200; } }
         ctaEl.textContent = CTA_PROMPTS[ci].text.slice(0, Math.max(0, cj));
